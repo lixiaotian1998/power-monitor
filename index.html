@@ -7,21 +7,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --bg-primary: #0f172a;
-            --bg-card: #1e293b;
-            --bg-card-hover: #263449;
+            --bg-primary: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
             --accent: #10b981;
-            --accent-light: #34d399;
-            --accent-dim: rgba(16, 185, 129, 0.12);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
+            --accent-light: #059669;
+            --accent-dim: rgba(16, 185, 129, 0.08);
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
             --text-muted: #64748b;
-            --border: rgba(148, 163, 184, 0.08);
+            --border: rgba(148, 163, 184, 0.2);
             --danger: #ef4444;
             --warning: #f59e0b;
             --info: #3b82f6;
             --recharge: #8b5cf6;
-            --recharge-dim: rgba(139, 92, 246, 0.12);
+            --recharge-dim: rgba(139, 92, 246, 0.08);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -30,6 +30,7 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
+        /* Header */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
         .header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
         .header h1 .icon { width: 36px; height: 36px; background: var(--accent-dim); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 18px; }
@@ -44,6 +45,7 @@
         .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
         .btn-sm { padding: 6px 12px; font-size: 13px; }
 
+        /* Status Card */
         .status-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
         .status-left .label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
         .status-left .amount { font-size: 42px; font-weight: 700; color: var(--accent); line-height: 1.1; }
@@ -53,6 +55,7 @@
         .live-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; display: inline-block; }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+        /* Stats Grid */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: transform 0.2s, box-shadow 0.2s; }
         .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
@@ -71,6 +74,7 @@
         .icon-red { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
         .icon-purple { background: var(--recharge-dim); color: var(--recharge); }
 
+        /* Section */
         .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
         .section-title { font-size: 18px; font-weight: 600; }
@@ -79,6 +83,7 @@
         .tab-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         .chart-container { position: relative; height: 280px; }
 
+        /* Query Section */
         .query-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
         .query-row label { font-size: 14px; color: var(--text-secondary); min-width: 80px; }
         .query-row input, .query-row select { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; outline: none; }
@@ -87,6 +92,7 @@
         .query-result .result-value { font-size: 32px; font-weight: 700; color: var(--accent); }
         .query-result .result-label { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
 
+        /* Data Table */
         .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
         .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
         .data-table th { color: var(--text-muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -97,6 +103,7 @@
         .badge-recharge { background: var(--recharge-dim); color: var(--recharge); }
         .badge-neutral { background: rgba(100, 116, 139, 0.12); color: var(--text-muted); }
 
+        /* Modal */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 520px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
@@ -144,6 +151,7 @@
         </div>
 
         <div id="mainContent">
+            <!-- Status Card -->
             <div class="status-card">
                 <div class="status-left">
                     <div class="label">当前剩余电量</div>
@@ -154,6 +162,7 @@
                 </div>
             </div>
 
+            <!-- Stats Grid -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-header"><span class="stat-title">今日用电</span><div class="stat-icon icon-green">&#9889;</div></div>
@@ -187,6 +196,7 @@
                 </div>
             </div>
 
+            <!-- Chart Section -->
             <div class="section">
                 <div class="section-header">
                     <span class="section-title">&#128200; 用电趋势</span>
@@ -198,6 +208,7 @@
                 <div class="chart-container"><canvas id="trendChart"></canvas></div>
             </div>
 
+            <!-- Query Section -->
             <div class="section">
                 <div class="section-header"><span class="section-title">&#128269; 用电查询</span></div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
@@ -218,6 +229,7 @@
                 </div>
             </div>
 
+            <!-- Hourly Stats -->
             <div class="section">
                 <div class="section-header">
                     <span class="section-title">&#128336; 今日每小时用电量</span>
@@ -228,6 +240,7 @@
                 <div class="chart-container" style="height:220px;"><canvas id="hourlyChart"></canvas></div>
             </div>
 
+            <!-- Recharge Records -->
             <div class="section">
                 <div class="section-header">
                     <span class="section-title">&#43; 充值记录</span>
@@ -244,6 +257,7 @@
                 </div>
             </div>
 
+            <!-- Recent Records -->
             <div class="section">
                 <div class="section-header"><span class="section-title">&#128196; 电量变动记录</span></div>
                 <div style="overflow-x:auto;">
@@ -256,6 +270,7 @@
         </div>
     </div>
 
+    <!-- Data Import Modal -->
     <div class="modal-overlay" id="dataModal">
         <div class="modal">
             <div class="modal-header"><span style="font-weight:600;">导入数据</span><button class="btn" onclick="closeDataModal()" style="padding:4px 10px;">&#10005;</button></div>
@@ -271,6 +286,7 @@
         </div>
     </div>
 
+    <!-- Recharge Modal -->
     <div class="modal-overlay" id="rechargeModal">
         <div class="modal">
             <div class="modal-header"><span style="font-weight:600;">记录充值</span><button class="btn" onclick="closeRechargeModal()" style="padding:4px 10px;">&#10005;</button></div>
@@ -293,6 +309,7 @@
     </div>
 
     <script>
+    // ======== DB ========
     const DB_NAME = 'PowerMonitor';
     const DB_VERSION = 2;
     const STORE_RECORDS = 'records';
@@ -348,6 +365,7 @@
         await new Promise((r,j) => { const q = tx2.objectStore(STORE_RECHARGES).clear(); q.onsuccess = r; q.onerror = j; });
     }
 
+    // Recharge DB
     async function addRecharge(time, amount) {
         const tx = db.transaction(STORE_RECHARGES, 'readwrite');
         const store = tx.objectStore(STORE_RECHARGES);
@@ -380,6 +398,7 @@
         });
     }
 
+    // ======== Utils ========
     function parseTime(str) { return new Date(str.replace(/-/g, '/')); }
     function formatDate(dt) { const d = new Date(dt); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
     function formatDateTime(dt) { const d = new Date(dt); return formatDate(d) + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
@@ -388,6 +407,8 @@
     function getCurrentMonth() { return formatMonth(new Date()); }
     function toLocalISO(dt) { const d = new Date(dt); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
 
+    // ======== Core Calculation ========
+    // Returns { usage, recharge } for a day
     function calculateDay(records, recharges, dayStr) {
         let usage = 0, recharge = 0;
         for (let i = 1; i < records.length; i++) {
@@ -396,6 +417,7 @@
             if (formatDate(d2) !== dayStr) continue;
             const diff = prev.leftAmount - curr.leftAmount;
             if (diff > 0) usage += diff;
+            // If amount increased, check if there's a manual recharge
             if (diff < 0) {
                 const rechargeMatch = recharges.find(r => {
                     const rt = parseTime(r.time);
@@ -403,10 +425,12 @@
                     return rt >= pt && rt <= ct;
                 });
                 if (!rechargeMatch) {
+                    // Auto-detect: could be an unrecorded recharge
                     recharge += Math.abs(diff);
                 }
             }
         }
+        // Also add manual recharges for this day
         for (const r of recharges) {
             if (formatDate(parseTime(r.time)) === dayStr) recharge += r.amount;
         }
@@ -424,19 +448,23 @@
             if (diff > 0) {
                 days[day].usage += diff;
             } else if (diff < 0) {
+                // Auto-detect:电量增加，但只是检测事件，金额不准确
                 days[day].rechargeAuto += Math.abs(diff);
                 days[day].rechargeAutoCount += 1;
             }
             days[day].last = curr;
         }
+        // Add manual recharges (authoritative source)
         for (const r of recharges) {
             const day = formatDate(parseTime(r.time));
             if (!days[day]) days[day] = { usage: 0, rechargeManual: 0, rechargeAuto: 0, rechargeAutoCount: 0 };
             days[day].rechargeManual += r.amount;
         }
+        // Derive total recharge: manual is authoritative, auto is supplementary
         for (const day of Object.values(days)) {
             day.recharge = day.rechargeManual;
             if (day.rechargeAuto > 0 && day.rechargeManual === 0) {
+                // Only use auto-detected if no manual record exists
                 day.recharge = day.rechargeAuto;
             }
         }
@@ -450,16 +478,18 @@
         for (let i = 1; i < todayRecs.length; i++) {
             const prev = todayRecs[i-1], curr = todayRecs[i];
             const diff = prev.leftAmount - curr.leftAmount;
-            if (diff <= 0) continue;
+            if (diff <= 0) continue; // Skip recharges
+            // Check if manual recharge happened between these two
             const hasRecharge = recharges.some(r => {
                 const rt = parseTime(r.time), pt = parseTime(prev.updateTime), ct = parseTime(curr.updateTime);
                 return formatDate(rt) === today && rt >= pt && rt <= ct;
             });
-            if (hasRecharge) continue;
+            if (hasRecharge) continue; // Can't accurately distribute if recharge happened
             const h1 = parseTime(prev.updateTime).getHours();
             const h2 = parseTime(curr.updateTime).getHours();
             const span = h2 - h1;
             if (span > 0) {
+                // Spread usage across hours between the two records
                 const perHour = diff / span;
                 for (let h = h1 + 1; h <= h2; h++) hours[h] += perHour;
             } else {
@@ -469,6 +499,7 @@
         return hours;
     }
 
+    // ======== UI ========
     async function refreshUI() {
         const records = await getAllRecords();
         const recharges = await getRecharges();
@@ -499,6 +530,7 @@
         });
 
         document.getElementById('todayUsage').textContent = todayData.usage.toFixed(2) + ' 度';
+        // Compare today with history
         const dayEntries = Object.entries(days).filter(([d]) => d !== today);
         const dayValues = dayEntries.map(([,v]) => v.usage).filter(v => v > 0);
         if (dayValues.length > 0) {
@@ -513,6 +545,7 @@
 
         document.getElementById('monthUsage').textContent = monthUsage.toFixed(2) + ' 度';
 
+        // Recharge stats
         const todayRecharge = todayData.recharge;
         const todayManual = todayData.rechargeManual;
         const todayAuto = todayData.rechargeAuto;
@@ -536,10 +569,12 @@
             document.getElementById('monthRechargeDesc').textContent = '无充值';
         }
 
+        // 7-day avg
         const last7 = Object.entries(days).slice(-7).map(([,v]) => v.usage);
         const avg7 = last7.length > 0 ? (last7.reduce((a,b) => a+b, 0) / last7.length).toFixed(2) : '0.00';
         document.getElementById('avgDailyUsage').textContent = avg7 + ' 度';
 
+        // Estimated days
         const avgDaily = parseFloat(avg7);
         const est = avgDaily > 0 ? Math.floor(latest.leftAmount / avgDaily) : '--';
         document.getElementById('estimatedDays').textContent = est + (est === '--' ? '' : ' 天');
@@ -570,10 +605,10 @@
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+                plugins: { legend: { labels: { color: '#64748b', font: { size: 12 } } } },
                 scales: {
-                    x: { grid: { display: false, color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } }, beginAtZero: true }
+                    x: { grid: { display: false, color: 'rgba(148,163,184,0.15)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(148,163,184,0.15)' }, ticks: { color: '#64748b', font: { size: 11 } }, beginAtZero: true }
                 }
             }
         });
@@ -594,8 +629,8 @@
                 responsive: true, maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
-                    y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } }, beginAtZero: true }
+                    x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(148,163,184,0.15)' }, ticks: { color: '#64748b', font: { size: 11 } }, beginAtZero: true }
                 }
             }
         });
@@ -625,7 +660,7 @@
             const r = show[i];
             let diff = '--', type = '<span class="badge badge-neutral">--</span>';
             if (i < show.length - 1) {
-                const next = show[i+1];
+                const next = show[i+1]; // next is older (reversed)
                 const d = r.leftAmount - next.leftAmount;
                 if (d > 0) {
                     diff = Math.abs(d).toFixed(2) + ' 度';
@@ -633,6 +668,7 @@
                 } else if (d < 0) {
                     const amount = Math.abs(d);
                     diff = '+' + amount.toFixed(2) + ' 度';
+                    // Check if manual recharge exists
                     const rt = parseTime(r.updateTime), nt = parseTime(next.updateTime);
                     const hasRc = recharges.some(rc => {
                         const t = parseTime(rc.time);
@@ -677,6 +713,7 @@
         document.getElementById('monthResult').style.display = '';
     }
 
+    // ======== Modals ========
     function openDataModal() { document.getElementById('dataModal').classList.add('active'); }
     function closeDataModal() { document.getElementById('dataModal').classList.remove('active'); }
     function openRechargeModal() { document.getElementById('rechargeModal').classList.add('active'); document.getElementById('rechargeTime').value = toLocalISO(new Date()); }
@@ -724,6 +761,7 @@
         refreshUI();
     }
 
+    // ======== External Data ========
     async function loadExternalData() {
         try {
             const resp = await fetch('data/history.json?t=' + Date.now());
@@ -737,6 +775,7 @@
         } catch (e) { console.log('No external data'); }
     }
 
+    // ======== Init ========
     openDB().then(() => {
         refreshUI();
         loadExternalData();
