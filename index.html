@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电量统计</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #263449;
+            --accent: #10b981;
+            --accent-light: #34d399;
+            --accent-dim: rgba(16, 185, 129, 0.12);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: rgba(148, 163, 184, 0.08);
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --recharge: #8b5cf6;
+            --recharge-dim: rgba(139, 92, 246, 0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
+        .header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+        .header h1 .icon { width: 36px; height: 36px; background: var(--accent-dim); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 18px; }
+
+        .btn { padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+        .btn-primary { background: var(--accent); color: #fff; border: none; }
+        .btn-primary:hover { background: var(--accent-light); }
+        .btn-recharge { background: var(--recharge); color: #fff; border: none; }
+        .btn-recharge:hover { background: #a78bfa; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: none; }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+        .status-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+        .status-left .label { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .status-left .amount { font-size: 42px; font-weight: 700; color: var(--accent); line-height: 1.1; }
+        .status-left .amount .unit { font-size: 16px; font-weight: 400; color: var(--text-secondary); margin-left: 4px; }
+        .status-right { text-align: right; }
+        .status-right .update-time { font-size: 14px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+        .live-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 2s infinite; display: inline-block; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+        .stat-card .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stat-card .stat-title { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+        .stat-card .stat-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+        .stat-card .stat-value { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+        .stat-card .stat-desc { font-size: 12px; color: var(--text-muted); }
+        .stat-card .stat-change { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+        .stat-change.up { color: var(--danger); }
+        .stat-change.down { color: var(--accent); }
+        .stat-change.neutral { color: var(--text-muted); }
+        .icon-green { background: rgba(16, 185, 129, 0.12); color: var(--accent); }
+        .icon-blue { background: rgba(59, 130, 246, 0.12); color: var(--info); }
+        .icon-orange { background: rgba(245, 158, 11, 0.12); color: var(--warning); }
+        .icon-red { background: rgba(239, 68, 68, 0.12); color: var(--danger); }
+        .icon-purple { background: var(--recharge-dim); color: var(--recharge); }
+
+        .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .section-title { font-size: 18px; font-weight: 600; }
+        .tab-group { display: flex; gap: 4px; background: rgba(15, 23, 42, 0.5); padding: 4px; border-radius: 10px; }
+        .tab-btn { padding: 6px 16px; border-radius: 8px; border: none; background: transparent; color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all 0.2s; }
+        .tab-btn.active { background: var(--bg-card); color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .chart-container { position: relative; height: 280px; }
+
+        .query-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+        .query-row label { font-size: 14px; color: var(--text-secondary); min-width: 80px; }
+        .query-row input, .query-row select { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; outline: none; }
+        .query-row input:focus, .query-row select:focus { border-color: var(--accent); }
+        .query-result { margin-top: 16px; padding: 20px; background: var(--bg-primary); border-radius: 12px; }
+        .query-result .result-value { font-size: 32px; font-weight: 700; color: var(--accent); }
+        .query-result .result-label { font-size: 14px; color: var(--text-muted); margin-bottom: 4px; }
+
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th, .data-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+        .data-table th { color: var(--text-muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .data-table td { color: var(--text-secondary); }
+        .data-table tr:hover td { color: var(--text-primary); }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+        .badge-use { background: rgba(16, 185, 129, 0.12); color: var(--accent); }
+        .badge-recharge { background: var(--recharge-dim); color: var(--recharge); }
+        .badge-neutral { background: rgba(100, 116, 139, 0.12); color: var(--text-muted); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 520px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { padding: 20px 24px; overflow-y: auto; }
+        .modal-body textarea { width: 100%; height: 160px; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 13px; font-family: monospace; resize: vertical; outline: none; }
+        .modal-body textarea:focus { border-color: var(--accent); }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); font-size: 14px; outline: none; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+
+        .hint { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text-secondary); }
+        .empty-state p { font-size: 14px; }
+
+        .action-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+
+        @media (max-width: 768px) {
+            .status-card { flex-direction: column; align-items: flex-start; }
+            .status-right { text-align: left; }
+            .header h1 { font-size: 20px; }
+            .status-left .amount { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><div class="icon">&#9889;</div>电量统计</h1>
+            <div class="action-bar">
+                <button class="btn btn-recharge btn-sm" onclick="openRechargeModal()">&#43; 记录充值</button>
+                <button class="btn btn-sm" onclick="openDataModal()">&#9998; 导入数据</button>
+                <button class="btn btn-sm" onclick="clearData()">&#128465; 清空</button>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none;">
+            <div class="empty-icon">&#128267;</div>
+            <h3>暂无数据</h3>
+            <p>点击「导入数据」粘贴 API 响应 JSON<br>或点击「记录充值」手动录入</p>
+        </div>
+
+        <div id="mainContent">
+            <div class="status-card">
+                <div class="status-left">
+                    <div class="label">当前剩余电量</div>
+                    <div class="amount"><span id="currentAmount">--</span><span class="unit">度</span></div>
+                </div>
+                <div class="status-right">
+                    <div class="update-time"><span class="live-dot"></span><span id="updateTime">--</span></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">今日用电</span><div class="stat-icon icon-green">&#9889;</div></div>
+                    <div class="stat-value" id="todayUsage" style="color:var(--text-primary);">--</div>
+                    <div class="stat-change" id="todayCompare"><span>--</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">本月用电</span><div class="stat-icon icon-blue">&#128197;</div></div>
+                    <div class="stat-value" id="monthUsage" style="color:var(--text-primary);">--</div>
+                    <div class="stat-desc">累计至今日</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">今日充值</span><div class="stat-icon icon-purple">&#43;</div></div>
+                    <div class="stat-value" id="todayRecharge" style="color:var(--recharge);">--</div>
+                    <div class="stat-desc" id="todayRechargeDesc">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">本月充值</span><div class="stat-icon icon-purple">&#43;</div></div>
+                    <div class="stat-value" id="monthRecharge" style="color:var(--recharge);">--</div>
+                    <div class="stat-desc" id="monthRechargeDesc">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">平均日用电</span><div class="stat-icon icon-orange">&#128200;</div></div>
+                    <div class="stat-value" id="avgDailyUsage" style="color:var(--text-primary);">--</div>
+                    <div class="stat-desc">近7天平均</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header"><span class="stat-title">预计可用</span><div class="stat-icon icon-red">&#9200;</div></div>
+                    <div class="stat-value" id="estimatedDays" style="color:var(--text-primary);">--</div>
+                    <div class="stat-desc">按平均日耗</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">&#128200; 用电趋势</span>
+                    <div class="tab-group">
+                        <button class="tab-btn active" onclick="switchChart(7,this)">7天</button>
+                        <button class="tab-btn" onclick="switchChart(30,this)">30天</button>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="trendChart"></canvas></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header"><span class="section-title">&#128269; 用电查询</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;">
+                    <div>
+                        <div class="query-row"><label>选择日期</label><input type="date" id="queryDate"><button class="btn btn-primary btn-sm" onclick="queryByDate()">查询</button></div>
+                        <div id="dateResult" class="query-result" style="display:none;">
+                            <div class="result-label">当日用电量</div>
+                            <div class="result-value" id="dateResultValue">--</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="query-row"><label>选择月份</label><input type="month" id="queryMonth"><button class="btn btn-primary btn-sm" onclick="queryByMonth()">查询</button></div>
+                        <div id="monthResult" class="query-result" style="display:none;">
+                            <div class="result-label">当月用电量</div>
+                            <div class="result-value" id="monthResultValue">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">&#128336; 今日每小时用电量</span>
+                </div>
+                <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+                    &#9432; 基于抓取数据点的时间跨度平均分配。当前每3小时抓取一次，数据点为稀疏采样。如需更精确的小时数据，可提高抓取频率（如每小时）或在手机上多刷新几次。
+                </p>
+                <div class="chart-container" style="height:220px;"><canvas id="hourlyChart"></canvas></div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <span class="section-title">&#43; 充值记录</span>
+                    <button class="btn btn-recharge btn-sm" onclick="openRechargeModal()">&#43; 新增充值</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead><tr><th>时间</th><th>充值金额</th><th>来源</th><th>操作</th></tr></thead>
+                        <tbody id="rechargeTable"></tbody>
+                    </table>
+                </div>
+                <div id="rechargeEmpty" class="empty-state" style="display:none;padding:30px 20px;">
+                    <p style="font-size:14px;">暂无充值记录</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header"><span class="section-title">&#128196; 电量变动记录</span></div>
+                <div style="overflow-x:auto;">
+                    <table class="data-table">
+                        <thead><tr><th>时间</th><th>剩余电量</th><th>变动</th><th>类型</th></tr></thead>
+                        <tbody id="recordsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="dataModal">
+        <div class="modal">
+            <div class="modal-header"><span style="font-weight:600;">导入数据</span><button class="btn" onclick="closeDataModal()" style="padding:4px 10px;">&#10005;</button></div>
+            <div class="modal-body">
+                <p style="font-size:14px;color:var(--text-secondary);margin-bottom:12px;">粘贴抓包响应中的 JSON 数据（支持自动提取 data 数组）：</p>
+                <textarea id="dataInput" placeholder='{"code":0,"data":[{"updateTime":"...","leftAmount":...}]}'></textarea>
+                <p class="hint">支持完整响应 JSON 或仅 data 数组。重复数据自动去重。电量增加的记录会自动标记为充值。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeDataModal()">取消</button>
+                <button class="btn btn-primary" onclick="importData()">导入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rechargeModal">
+        <div class="modal">
+            <div class="modal-header"><span style="font-weight:600;">记录充值</span><button class="btn" onclick="closeRechargeModal()" style="padding:4px 10px;">&#10005;</button></div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>充值时间</label>
+                    <input type="datetime-local" id="rechargeTime">
+                </div>
+                <div class="form-group">
+                    <label>充值金额（度）</label>
+                    <input type="number" id="rechargeAmount" value="50" step="0.01" min="0.01">
+                </div>
+                <p class="hint">默认充值50度。请确保充值时间准确，以便正确计算用电量。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeRechargeModal()">取消</button>
+                <button class="btn btn-recharge" onclick="saveRechargeEntry()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const DB_NAME = 'PowerMonitor';
+    const DB_VERSION = 2;
+    const STORE_RECORDS = 'records';
+    const STORE_RECHARGES = 'recharges';
+    let db = null;
+    let trendChart = null, hourlyChart = null;
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, DB_VERSION);
+            req.onerror = () => reject(req.error);
+            req.onsuccess = () => { db = req.result; resolve(db); };
+            req.onupgradeneeded = (e) => {
+                const d = e.target.result;
+                if (!d.objectStoreNames.contains(STORE_RECORDS)) {
+                    const s = d.createObjectStore(STORE_RECORDS, { keyPath: 'id' });
+                    s.createIndex('updateTime', 'updateTime', { unique: false });
+                }
+                if (!d.objectStoreNames.contains(STORE_RECHARGES)) {
+                    const s = d.createObjectStore(STORE_RECHARGES, { keyPath: 'id' });
+                    s.createIndex('time', 'time', { unique: false });
+                }
+            };
+        });
+    }
+
+    async function saveRecord(record) {
+        const tx = db.transaction(STORE_RECORDS, 'readwrite');
+        const store = tx.objectStore(STORE_RECORDS);
+        const id = record.updateTime + '_' + record.leftAmount;
+        const data = { id, updateTime: record.updateTime, leftAmount: parseFloat(record.leftAmount) };
+        return new Promise((resolve, reject) => {
+            const req = store.put(data);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function getAllRecords() {
+        const tx = db.transaction(STORE_RECORDS, 'readonly');
+        const store = tx.objectStore(STORE_RECORDS);
+        return new Promise((resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result.sort((a,b) => new Date(a.updateTime) - new Date(b.updateTime)));
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function clearAllRecords() {
+        const tx = db.transaction(STORE_RECORDS, 'readwrite');
+        await new Promise((r,j) => { const q = tx.objectStore(STORE_RECORDS).clear(); q.onsuccess = r; q.onerror = j; });
+        const tx2 = db.transaction(STORE_RECHARGES, 'readwrite');
+        await new Promise((r,j) => { const q = tx2.objectStore(STORE_RECHARGES).clear(); q.onsuccess = r; q.onerror = j; });
+    }
+
+    async function addRecharge(time, amount) {
+        const tx = db.transaction(STORE_RECHARGES, 'readwrite');
+        const store = tx.objectStore(STORE_RECHARGES);
+        const id = time + '_' + amount;
+        const data = { id, time, amount: parseFloat(amount) };
+        return new Promise((resolve, reject) => {
+            const req = store.put(data);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function getRecharges() {
+        const tx = db.transaction(STORE_RECHARGES, 'readonly');
+        const store = tx.objectStore(STORE_RECHARGES);
+        return new Promise((resolve, reject) => {
+            const req = store.getAll();
+            req.onsuccess = () => resolve(req.result.sort((a,b) => new Date(a.time) - new Date(b.time)));
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function deleteRecharge(id) {
+        const tx = db.transaction(STORE_RECHARGES, 'readwrite');
+        const store = tx.objectStore(STORE_RECHARGES);
+        return new Promise((resolve, reject) => {
+            const req = store.delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    function parseTime(str) { return new Date(str.replace(/-/g, '/')); }
+    function formatDate(dt) { const d = new Date(dt); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+    function formatDateTime(dt) { const d = new Date(dt); return formatDate(d) + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+    function formatMonth(dt) { const d = new Date(dt); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+    function getToday() { return formatDate(new Date()); }
+    function getCurrentMonth() { return formatMonth(new Date()); }
+    function toLocalISO(dt) { const d = new Date(dt); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
+
+    function calculateDay(records, recharges, dayStr) {
+        let usage = 0, recharge = 0;
+        for (let i = 1; i < records.length; i++) {
+            const prev = records[i-1], curr = records[i];
+            const d2 = parseTime(curr.updateTime);
+            if (formatDate(d2) !== dayStr) continue;
+            const diff = prev.leftAmount - curr.leftAmount;
+            if (diff > 0) usage += diff;
+            if (diff < 0) {
+                const rechargeMatch = recharges.find(r => {
+                    const rt = parseTime(r.time);
+                    const pt = parseTime(prev.updateTime), ct = parseTime(curr.updateTime);
+                    return rt >= pt && rt <= ct;
+                });
+                if (!rechargeMatch) {
+                    recharge += Math.abs(diff);
+                }
+            }
+        }
+        for (const r of recharges) {
+            if (formatDate(parseTime(r.time)) === dayStr) recharge += r.amount;
+        }
+        return { usage, recharge };
+    }
+
+    function calculateAllDays(records, recharges) {
+        const days = {};
+        for (let i = 1; i < records.length; i++) {
+            const prev = records[i-1], curr = records[i];
+            const d2 = parseTime(curr.updateTime);
+            const day = formatDate(d2);
+            if (!days[day]) days[day] = { usage: 0, rechargeManual: 0, rechargeAuto: 0, rechargeAutoCount: 0, first: prev, last: curr };
+            const diff = prev.leftAmount - curr.leftAmount;
+            if (diff > 0) {
+                days[day].usage += diff;
+            } else if (diff < 0) {
+                days[day].rechargeAuto += Math.abs(diff);
+                days[day].rechargeAutoCount += 1;
+            }
+            days[day].last = curr;
+        }
+        for (const r of recharges) {
+            const day = formatDate(parseTime(r.time));
+            if (!days[day]) days[day] = { usage: 0, rechargeManual: 0, rechargeAuto: 0, rechargeAutoCount: 0 };
+            days[day].rechargeManual += r.amount;
+        }
+        for (const day of Object.values(days)) {
+            day.recharge = day.rechargeManual;
+            if (day.rechargeAuto > 0 && day.rechargeManual === 0) {
+                day.recharge = day.rechargeAuto;
+            }
+        }
+        return days;
+    }
+
+    function calculateHourly(records, recharges) {
+        const hours = Array(24).fill(0);
+        const today = getToday();
+        const todayRecs = records.filter(r => formatDate(parseTime(r.updateTime)) === today);
+        for (let i = 1; i < todayRecs.length; i++) {
+            const prev = todayRecs[i-1], curr = todayRecs[i];
+            const diff = prev.leftAmount - curr.leftAmount;
+            if (diff <= 0) continue;
+            const hasRecharge = recharges.some(r => {
+                const rt = parseTime(r.time), pt = parseTime(prev.updateTime), ct = parseTime(curr.updateTime);
+                return formatDate(rt) === today && rt >= pt && rt <= ct;
+            });
+            if (hasRecharge) continue;
+            const h1 = parseTime(prev.updateTime).getHours();
+            const h2 = parseTime(curr.updateTime).getHours();
+            const span = h2 - h1;
+            if (span > 0) {
+                const perHour = diff / span;
+                for (let h = h1 + 1; h <= h2; h++) hours[h] += perHour;
+            } else {
+                hours[h2] += diff;
+            }
+        }
+        return hours;
+    }
+
+    async function refreshUI() {
+        const records = await getAllRecords();
+        const recharges = await getRecharges();
+        if (records.length === 0) {
+            document.getElementById('emptyState').style.display = '';
+            document.getElementById('mainContent').style.display = 'none';
+            return;
+        }
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('mainContent').style.display = '';
+
+        const latest = records[records.length - 1];
+        document.getElementById('currentAmount').textContent = latest.leftAmount.toFixed(2);
+        document.getElementById('updateTime').textContent = '更新于 ' + formatDateTime(latest.updateTime);
+
+        const days = calculateAllDays(records, recharges);
+        const today = getToday();
+        const todayData = days[today] || { usage: 0, recharge: 0, rechargeManual: 0, rechargeAuto: 0 };
+        const month = getCurrentMonth();
+        let monthUsage = 0, monthRecharge = 0, monthRechargeManual = 0, monthRechargeAuto = 0;
+        Object.entries(days).forEach(([d, v]) => {
+            if (d.startsWith(month)) {
+                monthUsage += v.usage;
+                monthRecharge += v.recharge;
+                monthRechargeManual += v.rechargeManual;
+                monthRechargeAuto += v.rechargeAuto;
+            }
+        });
+
+        document.getElementById('todayUsage').textContent = todayData.usage.toFixed(2) + ' 度';
+        const dayEntries = Object.entries(days).filter(([d]) => d !== today);
+        const dayValues = dayEntries.map(([,v]) => v.usage).filter(v => v > 0);
+        if (dayValues.length > 0) {
+            const avg = dayValues.reduce((a,b) => a+b, 0) / dayValues.length;
+            const diff = todayData.usage - avg;
+            const pct = avg > 0 ? ((diff / avg) * 100).toFixed(1) : 0;
+            const el = document.getElementById('todayCompare');
+            if (diff > 0) { el.className = 'stat-change up'; el.innerHTML = '&#9650; 高于平均 ' + Math.abs(pct) + '%'; }
+            else if (diff < 0) { el.className = 'stat-change down'; el.innerHTML = '&#9660; 低于平均 ' + Math.abs(pct) + '%'; }
+            else { el.className = 'stat-change neutral'; el.innerHTML = '与平均持平'; }
+        } else { document.getElementById('todayCompare').innerHTML = '<span class="stat-change neutral">暂无对比</span>'; }
+
+        document.getElementById('monthUsage').textContent = monthUsage.toFixed(2) + ' 度';
+
+        const todayRecharge = todayData.recharge;
+        const todayManual = todayData.rechargeManual;
+        const todayAuto = todayData.rechargeAuto;
+        document.getElementById('todayRecharge').textContent = todayRecharge.toFixed(2) + ' 度';
+        const todayRcCount = recharges.filter(r => formatDate(parseTime(r.time)) === today).length;
+        if (todayRcCount > 0) {
+            document.getElementById('todayRechargeDesc').textContent = todayRcCount + ' 笔手动充值';
+        } else if (todayAuto > 0) {
+            document.getElementById('todayRechargeDesc').textContent = '自动检测';
+        } else {
+            document.getElementById('todayRechargeDesc').textContent = '无充值';
+        }
+
+        document.getElementById('monthRecharge').textContent = monthRecharge.toFixed(2) + ' 度';
+        const monthRcCount = recharges.filter(r => formatDate(parseTime(r.time)).startsWith(month)).length;
+        if (monthRcCount > 0) {
+            document.getElementById('monthRechargeDesc').textContent = monthRcCount + ' 笔手动' + (monthRechargeAuto > 0 ? ' + 自动检测' : '');
+        } else if (monthRechargeAuto > 0) {
+            document.getElementById('monthRechargeDesc').textContent = '自动检测';
+        } else {
+            document.getElementById('monthRechargeDesc').textContent = '无充值';
+        }
+
+        const last7 = Object.entries(days).slice(-7).map(([,v]) => v.usage);
+        const avg7 = last7.length > 0 ? (last7.reduce((a,b) => a+b, 0) / last7.length).toFixed(2) : '0.00';
+        document.getElementById('avgDailyUsage').textContent = avg7 + ' 度';
+
+        const avgDaily = parseFloat(avg7);
+        const est = avgDaily > 0 ? Math.floor(latest.leftAmount / avgDaily) : '--';
+        document.getElementById('estimatedDays').textContent = est + (est === '--' ? '' : ' 天');
+
+        renderTrendChart(records, recharges, 7);
+        renderHourlyChart(records, recharges);
+        renderRechargeTable(recharges);
+        renderRecordsTable(records, recharges);
+    }
+
+    function renderTrendChart(records, recharges, nDays) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const days = calculateAllDays(records, recharges);
+        const sortedDays = Object.entries(days).sort((a,b) => a[0].localeCompare(b[0])).slice(-nDays);
+        const labels = sortedDays.map(([d]) => d.slice(5));
+        const usageData = sortedDays.map(([,v]) => parseFloat(v.usage.toFixed(2)));
+        const rechargeData = sortedDays.map(([,v]) => parseFloat(v.recharge.toFixed(2)));
+
+        if (trendChart) trendChart.destroy();
+        trendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: '用电 (度)', data: usageData, backgroundColor: 'rgba(16, 185, 129, 0.7)', borderColor: '#10b981', borderWidth: 1, borderRadius: 6, barThickness: 16 },
+                    { label: '充值 (度)', data: rechargeData, backgroundColor: 'rgba(139, 92, 246, 0.7)', borderColor: '#8b5cf6', borderWidth: 1, borderRadius: 6, barThickness: 16 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+                scales: {
+                    x: { grid: { display: false, color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function renderHourlyChart(records, recharges) {
+        const ctx = document.getElementById('hourlyChart').getContext('2d');
+        const hours = calculateHourly(records, recharges);
+        const labels = Array.from({length:24}, (_,i) => i + '时');
+        if (hourlyChart) hourlyChart.destroy();
+        hourlyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{ label: '每小时用电量 (度)', data: hours.map(v => parseFloat(v.toFixed(2))), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.15)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#3b82f6', borderWidth: 2 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                    y: { grid: { color: 'rgba(148,163,184,0.08)' }, ticks: { color: '#94a3b8', font: { size: 11 } }, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function renderRechargeTable(recharges) {
+        const tbody = document.getElementById('rechargeTable');
+        tbody.innerHTML = '';
+        const show = recharges.slice().reverse();
+        if (show.length === 0) {
+            document.getElementById('rechargeEmpty').style.display = '';
+            return;
+        }
+        document.getElementById('rechargeEmpty').style.display = 'none';
+        for (const r of show) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + r.time + '</td><td style="color:var(--recharge);font-weight:600;">+' + r.amount.toFixed(2) + ' 度</td><td><span class="badge badge-recharge">手动</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteRechargeEntry(\'' + r.id + '\')">删除</button></td>';
+            tbody.appendChild(tr);
+        }
+    }
+
+    function renderRecordsTable(records, recharges) {
+        const tbody = document.getElementById('recordsTable');
+        tbody.innerHTML = '';
+        const show = records.slice().reverse().slice(0, 20);
+        for (let i = 0; i < show.length; i++) {
+            const r = show[i];
+            let diff = '--', type = '<span class="badge badge-neutral">--</span>';
+            if (i < show.length - 1) {
+                const next = show[i+1];
+                const d = r.leftAmount - next.leftAmount;
+                if (d > 0) {
+                    diff = Math.abs(d).toFixed(2) + ' 度';
+                    type = '<span class="badge badge-use">用电</span>';
+                } else if (d < 0) {
+                    const amount = Math.abs(d);
+                    diff = '+' + amount.toFixed(2) + ' 度';
+                    const rt = parseTime(r.updateTime), nt = parseTime(next.updateTime);
+                    const hasRc = recharges.some(rc => {
+                        const t = parseTime(rc.time);
+                        return t >= nt && t <= rt;
+                    });
+                    type = '<span class="badge badge-recharge">充值' + (hasRc ? '' : '(自动)') + '</span>';
+                } else {
+                    diff = '0.00 度';
+                    type = '<span class="badge badge-neutral">无变化</span>';
+                }
+            }
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>' + r.updateTime + '</td><td>' + r.leftAmount.toFixed(2) + ' 度</td><td>' + diff + '</td><td>' + type + '</td>';
+            tbody.appendChild(tr);
+        }
+    }
+
+    function switchChart(days, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        Promise.all([getAllRecords(), getRecharges()]).then(([records, recharges]) => renderTrendChart(records, recharges, days));
+    }
+
+    async function queryByDate() {
+        const date = document.getElementById('queryDate').value;
+        if (!date) return;
+        const [records, recharges] = await Promise.all([getAllRecords(), getRecharges()]);
+        const days = calculateAllDays(records, recharges);
+        const result = days[date] || { usage: 0, recharge: 0 };
+        document.getElementById('dateResultValue').textContent = result.usage.toFixed(2) + ' 度' + (result.recharge > 0 ? ' (充值 +' + result.recharge.toFixed(2) + ')' : '');
+        document.getElementById('dateResult').style.display = '';
+    }
+
+    async function queryByMonth() {
+        const month = document.getElementById('queryMonth').value;
+        if (!month) return;
+        const [records, recharges] = await Promise.all([getAllRecords(), getRecharges()]);
+        const days = calculateAllDays(records, recharges);
+        let total = 0, rc = 0;
+        Object.entries(days).forEach(([d, v]) => { if (d.startsWith(month)) { total += v.usage; rc += v.recharge; } });
+        document.getElementById('monthResultValue').textContent = total.toFixed(2) + ' 度' + (rc > 0 ? ' (充值 +' + rc.toFixed(2) + ')' : '');
+        document.getElementById('monthResult').style.display = '';
+    }
+
+    function openDataModal() { document.getElementById('dataModal').classList.add('active'); }
+    function closeDataModal() { document.getElementById('dataModal').classList.remove('active'); }
+    function openRechargeModal() { document.getElementById('rechargeModal').classList.add('active'); document.getElementById('rechargeTime').value = toLocalISO(new Date()); }
+    function closeRechargeModal() { document.getElementById('rechargeModal').classList.remove('active'); }
+
+    async function importData() {
+        const raw = document.getElementById('dataInput').value.trim();
+        if (!raw) return;
+        try {
+            let data = JSON.parse(raw);
+            if (data.data && Array.isArray(data.data)) data = data.data;
+            else if (!Array.isArray(data)) { alert('格式错误：请提供 JSON 数组或包含 data 数组的对象'); return; }
+            let count = 0;
+            for (const item of data) {
+                if (item.updateTime && item.leftAmount !== undefined) {
+                    await saveRecord(item);
+                    count++;
+                }
+            }
+            alert('成功导入 ' + count + ' 条记录');
+            closeDataModal();
+            document.getElementById('dataInput').value = '';
+            refreshUI();
+        } catch (e) { alert('解析失败：' + e.message); }
+    }
+
+    async function saveRechargeEntry() {
+        const time = document.getElementById('rechargeTime').value;
+        const amount = parseFloat(document.getElementById('rechargeAmount').value);
+        if (!time || !amount || amount <= 0) { alert('请输入有效的充值时间和金额'); return; }
+        await addRecharge(time.replace('T', ' '), amount);
+        closeRechargeModal();
+        refreshUI();
+    }
+
+    async function deleteRechargeEntry(id) {
+        if (!confirm('确定删除这条充值记录吗？')) return;
+        await deleteRecharge(id);
+        refreshUI();
+    }
+
+    async function clearData() {
+        if (!confirm('确定要清空所有数据吗？')) return;
+        await clearAllRecords();
+        refreshUI();
+    }
+
+    async function loadExternalData() {
+        try {
+            const resp = await fetch('data/history.json?t=' + Date.now());
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (!Array.isArray(data)) return;
+            for (const item of data) {
+                if (item.updateTime && item.leftAmount !== undefined) await saveRecord(item);
+            }
+            refreshUI();
+        } catch (e) { console.log('No external data'); }
+    }
+
+    openDB().then(() => {
+        refreshUI();
+        loadExternalData();
+        document.getElementById('queryDate').value = getToday();
+        document.getElementById('queryMonth').value = getCurrentMonth();
+    });
+    </script>
+</body>
+</html>
