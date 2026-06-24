@@ -663,9 +663,7 @@
                 const next = show[i+1]; // next is older (reversed)
                 const d = r.leftAmount - next.leftAmount;
                 if (d > 0) {
-                    diff = Math.abs(d).toFixed(2) + ' 度';
-                    type = '<span class="badge badge-use">用电</span>';
-                } else if (d < 0) {
+                    // 新记录 > 旧记录，电量增加 = 充值
                     const amount = Math.abs(d);
                     diff = '+' + amount.toFixed(2) + ' 度';
                     // Check if manual recharge exists
@@ -675,6 +673,10 @@
                         return t >= nt && t <= rt;
                     });
                     type = '<span class="badge badge-recharge">充值' + (hasRc ? '' : '(自动)') + '</span>';
+                } else if (d < 0) {
+                    // 新记录 < 旧记录，电量减少 = 用电
+                    diff = Math.abs(d).toFixed(2) + ' 度';
+                    type = '<span class="badge badge-use">用电</span>';
                 } else {
                     diff = '0.00 度';
                     type = '<span class="badge badge-neutral">无变化</span>';
