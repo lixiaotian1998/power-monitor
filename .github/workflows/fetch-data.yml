@@ -2,7 +2,7 @@ name: Fetch Power Data
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -49,9 +49,21 @@ jobs:
             console.log('Total records:', history.length);
           "
 
+      - name: Update keepalive
+        run: |
+          echo "Last run: $(date -u +%Y-%m-%dT%H:%M:%SZ)" > .keepalive
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/history.json
-          git diff --cached --quiet || (git commit -m "Update power data at $(date -u +%Y-%m-%dT%H:%M:%SZ)" && git push)
+          git add data/history.json .keepalive
+          if git diff --cached --quiet; then
+            echo "No data changes, but keepalive updated."
+            git add .keepalive
+            git commit -m "Keepalive: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          else
+            git commit -m "Update power data at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
